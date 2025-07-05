@@ -122,10 +122,14 @@ namespace Vector {
     static s32 _faceColMax;
     static s32 _faceRowMin;
     static s32 _faceRowMax;
+    static Vision::ImageRGB565 _customEyeOverlay;
+    static bool _hasCustomEyes;
+    static Vision::Image _customEyeAlpha;
 
     static void ApplyAntiAliasing(Vision::Image& shape, float minX, float minY, float maxX, float maxY);
     static bool DrawEyes(const ProceduralFace& faceData, bool dirty);
     static bool DistortScanlines(const ProceduralFace& faceData, bool dirty);
+    static void LoadCustomEyePNG();
     static bool ApplyNoise(const Util::RandomGenerator& rng, bool dirty);
     static bool ConvertColorspace(const ProceduralFace& faceData, Vision::ImageRGB565& output, bool dirty);
 
