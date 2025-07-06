@@ -247,7 +247,7 @@ namespace Vector {
 
   void ProceduralFaceDrawer::LoadCustomEyePNG()
 {
-  cv::Mat img = cv::imread("/data/data/custom.png", cv::IMREAD_UNCHANGED);
+  cv::Mat img = cv::imread("/data/data/custom.jpg", cv::IMREAD_UNCHANGED);
   if(img.empty()) {
     return;
   }
