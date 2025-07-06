@@ -45,14 +45,19 @@ namespace Vector {
 
   CONSOLE_VAR(bool,         kProcFace_HotspotRender,              CONSOLE_GROUP, true); // Render glow
   CONSOLE_VAR_RANGED(f32,   kProcFace_HotspotFalloff,             CONSOLE_GROUP, 0.48f, 0.05f, 1.f);
-
+ 
   CONSOLE_VAR(bool,         kProcFace_EnableAntiAliasing,         CONSOLE_GROUP, true);
   CONSOLE_VAR_RANGED(s32,   kProcFace_AntiAliasingSize,           CONSOLE_GROUP, 3, 0, 15); // full image antialiasing (3 will use NEON)
   CONSOLE_VAR_ENUM(uint8_t, kProcFace_AntiAliasingFilter,         CONSOLE_GROUP, (uint8_t)Filter::BoxFilter, "None,Box,Gaussian");
   CONSOLE_VAR_RANGED(f32,   kProcFace_AntiAliasingSigmaFraction,  CONSOLE_GROUP, 0.5f, 0.0f, 1.0f);
   CONSOLE_VAR(bool, kProcFace_CustomEyes, CONSOLE_GROUP, false);
   CONSOLE_VAR_RANGED(f32, kProcFace_CustomEyeOpacity, CONSOLE_GROUP, 0.8f, 0.f, 1.f);
-  CONSOLE_VAR_ENUM(u8, kProcFace_FlavorOfGay, CONSOLE_GROUP, 0, "Lesbian,Gay,Bi,Trans,Pan,All");
+  CONSOLE_VAR_ENUM(u8, kProcFace_FlavorOfGay, CONSOLE_GROUP, 0, "Lesbian,Gay,Bi,Trans,Pan,Frog,All,Custom");
+  static void LOOK_LoadFaceOverlay(ConsoleFunctionContextRef context)
+  {
+    ProceduralFaceDrawer::LoadCustomEyePNG();
+  }
+  CONSOLE_FUNC(LOOK_LoadFaceOverlay, CONSOLE_GROUP);
 
 
 #if PROCEDURALFACE_GLOW_FEATURE
@@ -249,25 +254,19 @@ namespace Vector {
     }
   }
 
-  // wrapper for consolevars
-  static void ProcFace_LoadCustomEyePNG(ConsoleFunctionContextRef context)
-  {
-    ProceduralFaceDrawer::LoadCustomEyePNG();
-  }
-
-  CONSOLE_FUNC(ProcFace_LoadCustomEyePNG, "Face");
-
   void ProceduralFaceDrawer::LoadCustomEyePNG()
 {
   std::lock_guard<std::mutex> lk(gCustomEyeMtx);
   _hasCustomEyes = false;
-  static const cv::String kFaceOverlays[6] = { 
+  static const cv::String kFaceOverlays[8] = { 
     "/anki/data/assets/cozmo_resources/assets/faceOverlays/lesbian.jpg", 
     "/anki/data/assets/cozmo_resources/assets/faceOverlays/gay.jpg",
-    "/anki/data/assets/cozmo_resources/assets/faceOverlays/trans.jpg",
     "/anki/data/assets/cozmo_resources/assets/faceOverlays/bi.jpg",
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/trans.jpg",
     "/anki/data/assets/cozmo_resources/assets/faceOverlays/pan.jpg",
-    "/anki/data/assets/cozmo_resources/assets/faceOverlays/all.jpg"
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/frog.jpg",
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/all.jpg",
+    "/data/data/customFaceOverlay.jpg"
   };
   const cv::String kFaceOverlay = kFaceOverlays[kProcFace_FlavorOfGay];
   cv::Mat img = cv::imread(kFaceOverlay, cv::IMREAD_UNCHANGED);
@@ -1021,72 +1020,85 @@ bool ProceduralFaceDrawer::ApplyCustomOverlay(const ProceduralFace& faceData,
   if(kProcFace_CustomEyes && _hasCustomEyes)
   {
     std::lock_guard<std::mutex> lk(gCustomEyeMtx);
-    Rectangle<s32> roiR(_faceColMin,_faceRowMin,
-                        _faceColMax-_faceColMin+1,
-                        _faceRowMax-_faceRowMin+1);
 
-    Vision::ImageRGB565 dstROI = output.GetROI(roiR);
-    Vision::ImageRGB565 srcROI = _customEyeOverlay.GetROI(roiR);
-    Vision::Image       alpROI = _customEyeAlpha .GetROI(roiR);
-    Vision::Image       maskROI= _faceCache.img8[_faceCache.finalFace].GetROI(roiR); 
+    const int padX = 5;
+    int xMin0 = _faceColMin - padX;
+    int xMax0 = _faceColMax + padX;
+    int yMin0 = _faceRowMin;
+    int yMax0 = _faceRowMax;
+    int fullW = xMax0 - xMin0 + 1;
+    int fullH = yMax0 - yMin0 + 1;
 
-    for(s32 r=0;r<roiR.GetHeight();++r)
-    {
-      auto* d = dstROI .GetRow(r);
-      auto* s = srcROI .GetRow(r);
-      u8*  a  = alpROI .GetRow(r);
-      u8*  m  = maskROI.GetRow(r);
+    int xMin = std::max(0, xMin0);
+    int xMax = std::min(ProceduralFace::WIDTH - 1, xMax0);
+    int yMin = std::max(0, yMin0);
+    int yMax = std::min(ProceduralFace::HEIGHT - 1, yMax0);
+    Rectangle<s32> roiR(xMin, yMin,
+                        xMax - xMin + 1,
+                        yMax - yMin + 1);
 
-      for(s32 c=0; c<roiR.GetWidth(); ++c,++d,++s,++a,++m)
-      {
-        if(*m==0 || *a==0) {
-          // we are either outside the eye or fullly transparent
-          continue;
-        }
+    auto dstROI  = output.GetROI(roiR);
+    auto maskROI = _faceCache.img8[_faceCache.finalFace].GetROI(roiR);
 
-        auto unpack=[](u16 p)->std::array<u8,3>{
-          return {
-            static_cast<u8>((p>>11)&0x1F),
-            static_cast<u8>((p>>5)&0x3F),
-            static_cast<u8>(p&0x1F)
-          };
-        };
-        auto pack=[](u8 r8,u8 g8,u8 b8)->u16{
-          return static_cast<u16>((r8&0xF8)<<8 | (g8&0xFC)<<3 | (b8>>3));
-        };
+    int overlayW = _customEyeOverlay.GetNumCols();
+    int overlayH = _customEyeOverlay.GetNumRows();
+    float scaleX = overlayW / float(fullW);
+    float scaleY = overlayH / float(fullH);
 
-        auto d565 = unpack(d->GetValue());
-        auto s565 = unpack(s->GetValue());
+    for(int y = 0; y < roiR.GetHeight(); ++y) {
+      auto* dstRow  = dstROI .GetRow(y);
+      auto* maskRow = maskROI.GetRow(y);
+      int globalY    = yMin + y;
+      int sampleY    = std::min(overlayH - 1, std::max(0, int((globalY - yMin0) * scaleY)));
+      for(int x = 0; x < roiR.GetWidth(); ++x) {
+        if(maskRow[x] == 0) continue;
+        int globalX = xMin + x;
+        int sampleX = std::min(overlayW - 1, std::max(0, int((globalX - xMin0) * scaleX)));
+        u8 alpha = _customEyeAlpha.GetRow(sampleY)[sampleX];
+        if(alpha == 0) continue;
 
-        u8 dV = std::max({ static_cast<u8>((d565[0]<<3)|(d565[0]>>2)),
-                          static_cast<u8>((d565[1]<<2)|(d565[1]>>4)),
-                          static_cast<u8>((d565[2]<<3)|(d565[2]>>2)) });
+        // unpack d
+        u16 destVal = dstRow[x].GetValue();
+        u8 dR = (destVal >> 11) & 0x1F;
+        u8 dG = (destVal >> 5)  & 0x3F;
+        u8 dB =  destVal        & 0x1F;
+        u8 D_R = (dR << 3) | (dR >> 2);
+        u8 D_G = (dG << 2) | (dG >> 4);
+        u8 D_B = (dB << 3) | (dB >> 2);
 
-        u8 sR = ((s565[0]<<3)|(s565[0]>>2)) * dV / 255;
-        u8 sG = ((s565[1]<<2)|(s565[1]>>4)) * dV / 255;
-        u8 sB = ((s565[2]<<3)|(s565[2]>>2)) * dV / 255;
+        // overlay
+        u16 oVal = _customEyeOverlay.GetRow(sampleY)[sampleX].GetValue();
+        u8 oR = (oVal >> 11) & 0x1F;
+        u8 oG = (oVal >> 5)  & 0x3F;
+        u8 oB =  oVal        & 0x1F;
+        u8 O_R = (oR << 3) | (oR >> 2);
+        u8 O_G = (oG << 2) | (oG >> 4);
+        u8 O_B = (oB << 3) | (oB >> 2);
 
-        u8 alpha = *a;
-        u8 invA  = 255 - alpha;
+        // modulate by d intensity
+        u8 dV = std::max({D_R, D_G, D_B});
+        O_R = O_R * dV / 255;
+        O_G = O_G * dV / 255;
+        O_B = O_B * dV / 255;
 
+        // alpha blend
+        u8 invA = 255 - alpha;
+        u8 R = (O_R * alpha + D_R * invA) / 255;
+        u8 G = (O_G * alpha + D_G * invA) / 255;
+        u8 B = (O_B * alpha + D_B * invA) / 255;
 
-        u8 dR = (d565[0]<<3) | (d565[0]>>2);
-        u8 dG = (d565[1]<<2) | (d565[1]>>4);
-        u8 dB = (d565[2]<<3)| (d565[2]>>2);
-
-        u8 oR = (sR*alpha + dR*invA) / 255;
-        u8 oG = (sG*alpha + dG*invA) / 255;
-        u8 oB = (sB*alpha + dB*invA) / 255;
-
-        d->SetValue(pack(oR,oG,oB));
+        // pack
+        u16 packed = ((R & 0xF8) << 8) | ((G & 0xFC) << 3) | (B >> 3);
+        dstRow[x].SetValue(packed);
       }
-
     }
+
     dirty = true;
   }
-
   return dirty;
 }
+
+
 
   bool ProceduralFaceDrawer::GetNextBlinkFrame(ProceduralFace& faceData,
                                                BlinkState& out_blinkState,
