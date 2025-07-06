@@ -14,6 +14,7 @@
 #include "util/math/math.h"
 #include "util/math/numericCast.h"
 #include "util/random/randomGenerator.h"
+#include <mutex>
 
 // switch std::round() to macro for easier change
 // switched from (x) to std::round(x) as it was noticed edges were jittering when
@@ -26,6 +27,8 @@
 
 namespace Anki {
 namespace Vector {
+
+  static std::mutex gCustomEyeMtx;
 
   #define CONSOLE_GROUP "Face.ParameterizedFace"
 
@@ -48,7 +51,8 @@ namespace Vector {
   CONSOLE_VAR_ENUM(uint8_t, kProcFace_AntiAliasingFilter,         CONSOLE_GROUP, (uint8_t)Filter::BoxFilter, "None,Box,Gaussian");
   CONSOLE_VAR_RANGED(f32,   kProcFace_AntiAliasingSigmaFraction,  CONSOLE_GROUP, 0.5f, 0.0f, 1.0f);
   CONSOLE_VAR(bool, kProcFace_CustomEyes, CONSOLE_GROUP, false);
-  CONSOLE_VAR_RANGED(f32, kProcFace_CustomEyeOpacity, CONSOLE_GROUP, 0.2f, 0.f, 1.f);
+  CONSOLE_VAR_RANGED(f32, kProcFace_CustomEyeOpacity, CONSOLE_GROUP, 0.8f, 0.f, 1.f);
+  CONSOLE_VAR_ENUM(u8, kProcFace_FlavorOfGay, CONSOLE_GROUP, 0, "Lesbian,Gay,Bi,Trans,Pan,All");
 
 
 #if PROCEDURALFACE_GLOW_FEATURE
@@ -245,9 +249,28 @@ namespace Vector {
     }
   }
 
+  // wrapper for consolevars
+  static void ProcFace_LoadCustomEyePNG(ConsoleFunctionContextRef context)
+  {
+    ProceduralFaceDrawer::LoadCustomEyePNG();
+  }
+
+  CONSOLE_FUNC(ProcFace_LoadCustomEyePNG, "Face");
+
   void ProceduralFaceDrawer::LoadCustomEyePNG()
 {
-  cv::Mat img = cv::imread("/data/data/custom.jpg", cv::IMREAD_UNCHANGED);
+  std::lock_guard<std::mutex> lk(gCustomEyeMtx);
+  _hasCustomEyes = false;
+  static const cv::String kFaceOverlays[6] = { 
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/lesbian.jpg", 
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/gay.jpg",
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/trans.jpg",
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/bi.jpg",
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/pan.jpg",
+    "/anki/data/assets/cozmo_resources/assets/faceOverlays/all.jpg"
+  };
+  const cv::String kFaceOverlay = kFaceOverlays[kProcFace_FlavorOfGay];
+  cv::Mat img = cv::imread(kFaceOverlay, cv::IMREAD_UNCHANGED);
   if(img.empty()) {
     return;
   }
@@ -289,9 +312,9 @@ namespace Vector {
         a = Util::Clamp<u8>(kProcFace_CustomEyeOpacity*255.f,0,255); 
       }
 
-      // dstPix[c] = { 
-      //   static_cast<u16>( ((r8 & 0xF8)<<8) | ((g & 0xFC)<<3) | (b>>3) ) 
-      // };
+      dstPix[c] = { 
+        static_cast<u16>( ((r8 & 0xF8)<<8) | ((g & 0xFC)<<3) | (b>>3) ) 
+      };
       dstA  [c] = a;
     }
   }
@@ -726,6 +749,7 @@ namespace Vector {
     dirty = DistortScanlines(faceData, dirty);
     dirty = ApplyNoise(rng, dirty);
     dirty = ConvertColorspace(faceData, output, dirty);
+    dirty = ApplyCustomOverlay(faceData, output, dirty);
   } // DrawFace()
 
   bool ProceduralFaceDrawer::DrawEyes(const ProceduralFace& faceData, bool dirty)
@@ -948,8 +972,6 @@ bool ProceduralFaceDrawer::ConvertColorspace(const ProceduralFace& faceData,
                                              Vision::ImageRGB565& output,
                                              bool dirty)
 {
-  // load once
-  static bool _didLoadCustom = (LoadCustomEyePNG(), true);
   ANKI_CPU_PROFILE("ConvertColorspace");
 
   output.Allocate(FACE_DISPLAY_HEIGHT, FACE_DISPLAY_WIDTH);
@@ -987,8 +1009,18 @@ bool ProceduralFaceDrawer::ConvertColorspace(const ProceduralFace& faceData,
             .ConvertV2RGB565(drawHue,drawSat, outROI);
   }
 
+  return dirty;
+}
+
+bool ProceduralFaceDrawer::ApplyCustomOverlay(const ProceduralFace& faceData,
+                                             Vision::ImageRGB565& output,
+                                             bool dirty)
+{
+  static bool _didLoadCustom = (LoadCustomEyePNG(), true);
+
   if(kProcFace_CustomEyes && _hasCustomEyes)
   {
+    std::lock_guard<std::mutex> lk(gCustomEyeMtx);
     Rectangle<s32> roiR(_faceColMin,_faceRowMin,
                         _faceColMax-_faceColMin+1,
                         _faceRowMax-_faceRowMin+1);
@@ -1005,53 +1037,56 @@ bool ProceduralFaceDrawer::ConvertColorspace(const ProceduralFace& faceData,
       u8*  a  = alpROI .GetRow(r);
       u8*  m  = maskROI.GetRow(r);
 
-      for(s32 c=0;c<roiR.GetWidth();++c,++d,++s,++a,++m)
+      for(s32 c=0; c<roiR.GetWidth(); ++c,++d,++s,++a,++m)
       {
         if(*m==0 || *a==0) {
+          // we are either outside the eye or fullly transparent
           continue;
         }
 
-        /* unpack 565 -> 8-bit */
         auto unpack=[](u16 p)->std::array<u8,3>{
-          return { 
-            static_cast<u8>((p>>11)&0x1F), 
-            static_cast<u8>((p>>5)&0x3F), 
-          static_cast<u8>(p&0x1F) 
+          return {
+            static_cast<u8>((p>>11)&0x1F),
+            static_cast<u8>((p>>5)&0x3F),
+            static_cast<u8>(p&0x1F)
           };
         };
-        auto pack=[](u8 r5,u8 g6,u8 b5)->u16{
-          return (r5<<11)|(g6<<5)|b5;
+        auto pack=[](u8 r8,u8 g8,u8 b8)->u16{
+          return static_cast<u16>((r8&0xF8)<<8 | (g8&0xFC)<<3 | (b8>>3));
         };
 
-        auto dRGB = unpack(d->GetValue());
-        auto sRGB = unpack(s->GetValue());
+        auto d565 = unpack(d->GetValue());
+        auto s565 = unpack(s->GetValue());
+
+        u8 dV = std::max({ static_cast<u8>((d565[0]<<3)|(d565[0]>>2)),
+                          static_cast<u8>((d565[1]<<2)|(d565[1]>>4)),
+                          static_cast<u8>((d565[2]<<3)|(d565[2]>>2)) });
+
+        u8 sR = ((s565[0]<<3)|(s565[0]>>2)) * dV / 255;
+        u8 sG = ((s565[1]<<2)|(s565[1]>>4)) * dV / 255;
+        u8 sB = ((s565[2]<<3)|(s565[2]>>2)) * dV / 255;
 
         u8 alpha = *a;
-        u16 invA = 255 - alpha;
+        u8 invA  = 255 - alpha;
 
-        // blend with silly magic
-        u8 dR = (dRGB[0]<<3)| (dRGB[0]>>2);
-        u8 dG = (dRGB[1]<<2)| (dRGB[1]>>4);
-        u8 dB = (dRGB[2]<<3)| (dRGB[2]>>2);
 
-        u8 sR = (sRGB[0]<<3)| (sRGB[0]>>2);
-        u8 sG = (sRGB[1]<<2)| (sRGB[1]>>4);
-        u8 sB = (sRGB[2]<<3)| (sRGB[2]>>2);
+        u8 dR = (d565[0]<<3) | (d565[0]>>2);
+        u8 dG = (d565[1]<<2) | (d565[1]>>4);
+        u8 dB = (d565[2]<<3)| (d565[2]>>2);
 
-        u8 oR = (sR*alpha + dR*invA)/255;
-        u8 oG = (sG*alpha + dG*invA)/255;
-        u8 oB = (sB*alpha + dB*invA)/255;
+        u8 oR = (sR*alpha + dR*invA) / 255;
+        u8 oG = (sG*alpha + dG*invA) / 255;
+        u8 oB = (sB*alpha + dB*invA) / 255;
 
-        d->SetValue(pack((oR>>3),(oG>>2),(oB>>3)));
+        d->SetValue(pack(oR,oG,oB));
       }
+
     }
     dirty = true;
   }
 
   return dirty;
 }
-
-
 
   bool ProceduralFaceDrawer::GetNextBlinkFrame(ProceduralFace& faceData,
                                                BlinkState& out_blinkState,

@@ -76,6 +76,9 @@ namespace Vector {
     static bool ApplyScanlines(Vision::ImageRGB& imageHsv, const float opacity, bool dirty = true);
     static bool ApplyScanlines(Vision::Image& image8, const float opacity, bool dirty = true);
 
+    // needs to be accessed by console vars
+    static void LoadCustomEyePNG();
+
   private:
 
     using Parameter = ProceduralEyeParameter;
@@ -129,9 +132,9 @@ namespace Vector {
     static void ApplyAntiAliasing(Vision::Image& shape, float minX, float minY, float maxX, float maxY);
     static bool DrawEyes(const ProceduralFace& faceData, bool dirty);
     static bool DistortScanlines(const ProceduralFace& faceData, bool dirty);
-    static void LoadCustomEyePNG();
     static bool ApplyNoise(const Util::RandomGenerator& rng, bool dirty);
     static bool ConvertColorspace(const ProceduralFace& faceData, Vision::ImageRGB565& output, bool dirty);
+    static bool ApplyCustomOverlay(const ProceduralFace& faceData, Vision::ImageRGB565& output, bool dirty);
 
 #if PROCEDURALFACE_NOISE_FEATURE
     static const Array2d<u8>& GetNoiseImage(const Util::RandomGenerator& rng);
