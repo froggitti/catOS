@@ -1017,7 +1017,7 @@ bool ProceduralFaceDrawer::ApplyCustomOverlay(const ProceduralFace& faceData,
 {
   static bool _didLoadCustom = (LoadCustomEyePNG(), true);
 
-  if(kProcFace_CustomEyes && _hasCustomEyes)
+  if(kProcFace_CustomEyes && _hasCustomEyes && _didLoadCustom)
   {
     std::lock_guard<std::mutex> lk(gCustomEyeMtx);
 

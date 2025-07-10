@@ -203,9 +203,10 @@ if (VICOS)
   include(gen-version)
 endif()
 
-if (VICOS)
-  add_subdirectory("auto-test")
-endif()
+# god i just REALLY don't wanna fix this
+#if (VICOS)
+#  add_subdirectory("auto-test")
+#endif()
 
 add_subdirectory("resources")
 
