@@ -131,7 +131,7 @@ static int RobotTestWebServerHandler(struct mg_connection *conn, void *cbdata)
   if (info->content_length > 0)
   {
     std::vector<char> buf(static_cast<size_t>(info->content_length) + 1);
-    mg_read(conn, buf.data(), sizeof(buf));
+    mg_read(conn, buf.data(), buf.size());
     buf[static_cast<size_t>(info->content_length)] = 0;
     commands = buf.data();
   }
