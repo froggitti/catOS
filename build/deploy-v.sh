@@ -36,6 +36,6 @@ docker run --rm -it \
     "cd $(pwd) && \
     eval \$(ssh-agent) && \
     ssh-add robot_sshkey && \
-    ./project/victor/scripts/victor_deploy.sh -c Release -b && \
+    ./project/victor/scripts/victor_deploy.sh $@ -c Release -b && \
     ./project/victor/scripts/victor_start.sh"
 fi

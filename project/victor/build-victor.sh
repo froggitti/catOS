@@ -2,6 +2,9 @@
 
 set -e
 
+VICOS_SDK_VERSION="5.2.1-r06"
+GO_VERSION="1.24.4"
+
 SCRIPT_PATH=$(dirname $([ -L $0 ] && echo "$(dirname $0)/$(readlink -n $0)" || echo $0))
 SCRIPT_NAME=`basename ${0}`
 TOPLEVEL=$(cd "${SCRIPT_PATH}/../.." && pwd)
@@ -155,11 +158,6 @@ function usage_fix_lfs() {
     exit 1
 }
 
-#for f in `git ls-files *.tflite`; do
-#    egrep -q TFL3 $f || usage_fix_lfs $f
-#done
-
-
 #
 # settings
 #
@@ -270,7 +268,7 @@ case ${GENERATOR} in
         ;;
     "Makefiles")
         PROJECT_FILE="Makefile"
-        GENERATOR="CodeBlocks - Unix Makefiles"
+        GENERATOR="Unix Makefiles"
       ;;
     "*")
         PROJECT_FILE=""
@@ -313,7 +311,7 @@ if [ $RM_BUILD_ASSETS -eq 1 ]; then
 fi
 
 #
-# grab Go dependencies ahead of generating source lists
+# generate source lists
 #
 if [ $IGNORE_EXTERNAL_DEPENDENCIES -eq 0 ] || [ $CONFIGURE -eq 1 ] ; then
     GEN_SRC_DIR="${TOPLEVEL}/generated/cmake"
@@ -324,11 +322,6 @@ if [ $IGNORE_EXTERNAL_DEPENDENCIES -eq 0 ] || [ $CONFIGURE -eq 1 ] ; then
 
     # Scan for BUILD.in files
     METABUILD_INPUTS=`find . -name BUILD.in`
-
-    # # Process BUILD.in files (creates list of Go projects to fetch)
-    # PATH="$(dirname $GO_EXE):$PATH" ${BUILD_TOOLS}/metabuild/metabuild.py --go-output \
-    #   -o ${GEN_SRC_DIR} \
-    #   ${METABUILD_INPUTS}
 fi
 
 # Set protobuf location
@@ -336,7 +329,6 @@ HOST=`uname -a | awk '{print tolower($1);}' | sed -e 's/darwin/mac/'`
 if [[ `uname -a` == *"aarch64"* && $HOST == "linux" ]]; then
 	HOST+="-arm64"
 fi
-echo $HOST
 PROTOBUF_HOME=${TOPLEVEL}/3rd/protobuf/${HOST}
 
 # Build protocCppPlugin if needed
@@ -351,21 +343,25 @@ else
   done
 fi
 if [[ $BUILD_PROTOC_PLUGIN -eq 1 ]]; then
+    echo "Building protocCppPlugin..."
     ${TOPLEVEL}/tools/protobuf/plugin/make.sh
+fi
+
+if [ -z "${GO_EXE+x}" ]; then
+    ${TOPLEVEL}/project/build-scripts/download-go.sh ${GO_VERSION}
+    GO_EXE="${HOME}/.anki/go/dist/${GO_VERSION}/go/bin/go"
 fi
 
 
 # Build/Install the protoc generators for go
-# GOBIN="${TOPLEVEL}/cloud/go/bin"
-# if [[ ! -x $GOBIN/protoc-gen-go ]] || [[ ! -x $GOBIN/protoc-gen-grpc-gateway ]]; then
-#     echo "Building/Installing protoc-gen-go and protoc-gen-grpc-gateway"
-#     GOBIN=$GOBIN \
-#     CC=/usr/bin/cc \
-#     CXX=/usr/bin/c++ \
-#     "${GOROOT}/bin/go" install \
-#     github.com/golang/protobuf/protoc-gen-go \
-#     github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-# fi
+GOBIN="${TOPLEVEL}/cloud/go/bin"
+mkdir -p "${GOBIN}"
+if [[ ! -x "$GOBIN/protoc-gen-go" ]] || [[ ! -x "$GOBIN/protoc-gen-grpc-gateway" ]]; then
+    echo "Building/Installing protoc-gen-go and protoc-gen-grpc-gateway..."
+    GOBIN=$GOBIN "${GO_EXE}" install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+    GOBIN=$GOBIN "${GO_EXE}" install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+    GOBIN=$GOBIN "${GO_EXE}" install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.27.1
+fi
 
 #
 # generate source file lists
@@ -410,10 +406,11 @@ if [ $CONFIGURE -eq 1 ]; then
         )
     elif [ "$PLATFORM" == "vicos" ] ; then
         #
-        # If VICOS_SDK is set, use it, else provide default location
+        # If VICOS_SDK is set, use it, else download toolchain
         #
         if [ -z "${VICOS_SDK+x}" ]; then
-            VICOS_SDK=$(${TOPLEVEL}/tools/build/tools/ankibuild/vicos.py --install 5.2.1-r06 | tail -1)
+            ${TOPLEVEL}/project/build-scripts/download-vicos-sdk.sh "$VICOS_SDK_VERSION"
+            VICOS_SDK="${HOME}/.anki/vicos-sdk/dist/${VICOS_SDK_VERSION}"
         fi
 
         PLATFORM_ARGS=(
@@ -436,11 +433,13 @@ if [ $CONFIGURE -eq 1 ]; then
     $CMAKE_EXE ${TOPLEVEL} \
         ${VERBOSE_ARG} \
         -G"${GENERATOR}" \
+        -DANKI_GO_COMPILER=${GO_EXE} \
+        -DANKI_GO_BIN_PATH=${GOBIN} \
         -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} \
         -DPROTOBUF_HOME=${PROTOBUF_HOME} \
         -DANKI_BUILD_SHA=${ANKI_BUILD_SHA} \
-	-DCMAKE_COLOR_DIAGNOSTICS=ON \
+        -DCMAKE_COLOR_DIAGNOSTICS=ON \
         ${EXPORT_FLAGS} \
         ${FEATURE_FLAGS} \
         ${DEFINES} \

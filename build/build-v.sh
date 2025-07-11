@@ -1,56 +1,8 @@
 #!/usr/bin/env bash
 
-TOOLCHAIN_VERSION="5.2.1-r06"
 CURRENT_BUILDER="vic-standalone-builder-7"
 
 set -e
-
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
-cd $DIR
-
-if [[ "$(uname -a)" == *"x86_64"* && "$(uname -a)" == *"Linux"* ]]; then
-	HOST="amd64-linux"
-	ADEPS="anki-deps"
-elif [[ "$(uname -a)" == *"arm64"* && "$(uname -a)" == *"Darwin"* ]]; then
-	HOST="arm64-macos"
-	ADEPS="$HOME/.anki"
-#elif [[ "$(uname -a)" == *"x86_64"* && "$(uname -a)" == *"Darwin"* ]]; then
-#        HOST="amd64-macos"
-#        ADEPS="$HOME/.anki"
-elif [[ "$(uname -a)" == *"aarch64"* && "$(uname -a)" == *"Linux"* ]]; then
-        HOST="arm64-linux"
-        ADEPS="anki-deps"
-else
-    echo "This can only be run on x86_64 Linux, arm64 macOS, or arm64 macOS systems at the moment."
-    echo "This will be fixed once I compile the new toolchain for more platforms."
-    exit 1
-fi
-
-echo $HOST
-
-# remove old toolchain
-echo "Deleting old 4.0.0-r05 toolchain if it exists..."
-rm -rf $ADEPS/vicos-sdk/dist/4.0.0-r05
-
-if [[ ! -d "$ADEPS/vicos-sdk/dist/${TOOLCHAIN_VERSION}/prebuilt" ]]; then
-	mkdir -p "$ADEPS/vicos-sdk/dist/${TOOLCHAIN_VERSION}"
-	cd "$ADEPS/vicos-sdk/dist/${TOOLCHAIN_VERSION}"
-	wget -q --show-progress https://github.com/os-vector/wire-os-externals/releases/download/${TOOLCHAIN_VERSION}/vicos-sdk_${TOOLCHAIN_VERSION}_$HOST.tar.gz
-	tar -zxf vicos-sdk_${TOOLCHAIN_VERSION}_$HOST.tar.gz
-	rm -f vicos-sdk_${TOOLCHAIN_VERSION}_$HOST.tar.gz
-fi
-
-cd "$DIR"
-
-if [[ ! -d "$ADEPS/wwise" ]]; then
-	mkdir -p "$ADEPS/wwise/versions/2017.2.7_a"
-	cd "$ADEPS/wwise/versions/2017.2.7_a"
-	wget -q --show-progress https://github.com/os-vector/wire-os-externals/releases/download/4.0.0-r05/wwise-2017.2.7_a.tar.gz
-	tar -zxf wwise-2017.2.7_a.tar.gz
-	rm -f wwise-2017.2.7_a.tar.gz
-fi
-
-cd "$DIR"
 
 if [[ "$(uname -a)" == *"Darwin"* ]]; then
 	echo "Installing required Go stuff..."

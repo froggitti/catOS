@@ -37,20 +37,17 @@ function check_dep()
 pushd "${TOPLEVEL}" > /dev/null 2>&1
 
 # Check for required programs
-check_dep which python2
 check_dep which python3
 check_dep which ninja
-#check_dep which git-lfs
 
-
-echo `pwd`
-
-vlog "vicos-sdk"
-./tools/build/tools/ankibuild/vicos.py --install 5.2.1-r06
+# this is handled by outside script
+#vlog "vicos-sdk"
+#./tools/build/tools/ankibuild/vicos.py --install 5.2.1-r06
 
 vlog "CMake"
 ./tools/build/tools/ankibuild/cmake.py
 
+# we are no longer using this
 #vlog "git lfs"
 #$GIT lfs install
 #$GIT lfs pull

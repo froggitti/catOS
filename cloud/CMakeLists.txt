@@ -94,22 +94,43 @@ anki_build_go(
   EXTRA_DEPENDS ${PROTO_GO_GEN_FILES}
 )
 
+# add_custom_command(
+#   OUTPUT ${PROTO_GO_GEN_FILES}
+#   COMMAND ${CMAKE_COMMAND} -E make_directory "${GATEWAY_GRPC_GO_OUTPUT_DIR}"
+#   COMMAND protoc
+#     --proto_path=${PROTO_SRC_DIR}
+#     --go_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
+#     --go-grpc_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
+#     --grpc-gateway_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
+#     --go_opt=paths=source_relative
+#     --go-grpc_opt=paths=source_relative
+#     --grpc-gateway_opt=paths=source_relative
+#     ${PROTO_FILES}
+#   DEPENDS ${PROTO_FILES}
+#   COMMENT "Generating all Go proto sources"
+#   VERBATIM
+# )
+
 add_custom_command(
   OUTPUT ${PROTO_GO_GEN_FILES}
   COMMAND ${CMAKE_COMMAND} -E make_directory "${GATEWAY_GRPC_GO_OUTPUT_DIR}"
-  COMMAND protoc
-    --proto_path=${PROTO_SRC_DIR}
-    --go_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
-    --go-grpc_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
-    --grpc-gateway_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
-    --go_opt=paths=source_relative
-    --go-grpc_opt=paths=source_relative
-    --grpc-gateway_opt=paths=source_relative
-    ${PROTO_FILES}
+  # this one runs protoc with your extra bin dir prepended to PATH, nya~
+  COMMAND ${CMAKE_COMMAND} -E env
+          "PATH=${ANKI_GO_BINPATH}:$ENV{PATH}"
+          protoc
+            --proto_path=${PROTO_SRC_DIR}
+            --go_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
+            --go-grpc_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
+            --grpc-gateway_out=${GATEWAY_GRPC_GO_OUTPUT_DIR}
+            --go_opt=paths=source_relative
+            --go-grpc_opt=paths=source_relative
+            --grpc-gateway_opt=paths=source_relative
+            ${PROTO_FILES}
   DEPENDS ${PROTO_FILES}
   COMMENT "Generating all Go proto sources"
   VERBATIM
 )
+
 
 add_custom_target(proto_gen ALL DEPENDS ${PROTO_GO_GEN_FILES})
 
