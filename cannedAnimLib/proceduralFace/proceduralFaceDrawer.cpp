@@ -1017,9 +1017,10 @@ bool ProceduralFaceDrawer::ApplyCustomOverlay(const ProceduralFace& faceData,
 {
   static bool _didLoadCustom = (LoadCustomEyePNG(), true);
 
-  if(kProcFace_CustomEyes && _hasCustomEyes && _didLoadCustom)
+  if(kProcFace_CustomEyes && _hasCustomEyes)
   {
     std::lock_guard<std::mutex> lk(gCustomEyeMtx);
+    (void)_didLoadCustom;
 
     const int padX = 5;
     int xMin0 = _faceColMin - padX;
