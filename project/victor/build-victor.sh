@@ -2,6 +2,7 @@
 
 set -e
 
+CMAKE_VERSION="3.30.4"
 VICOS_SDK_VERSION="5.2.1-r06"
 GO_VERSION="1.24.4"
 PROTOC_GEN_GO_VERSION="v1.36.6"
@@ -151,8 +152,8 @@ cd ${TOPLEVEL}
 if [ -z "${CMAKE_EXE+x}" ]; then
     echo "Attempting to install cmake"
     echo -n "CMake: "
-    ${TOPLEVEL}/tools/build/tools/ankibuild/cmake.py --install-cmake 4.0.3
-    CMAKE_EXE=`${TOPLEVEL}/tools/build/tools/ankibuild/cmake.py --find-cmake 4.0.3`
+    ${TOPLEVEL}/tools/build/tools/ankibuild/cmake.py --install-cmake $CMAKE_VERSION
+    CMAKE_EXE=`${TOPLEVEL}/tools/build/tools/ankibuild/cmake.py --find-cmake $CMAKE_VERSION`
 fi
 
 if [ $IGNORE_EXTERNAL_DEPENDENCIES -eq 0 ]; then

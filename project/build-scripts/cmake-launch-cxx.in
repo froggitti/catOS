@@ -15,5 +15,5 @@ export CCACHE_MAXSIZE=10G
 export CCACHE_HARDLINK=true
 export CCACHE_BASEDIR="${CMAKE_SOURCE_DIR}"
 # caching is conservative by default, for more agressive caching, uncomment the next line           
-# export CCACHE_SLOPPINESS=file_macro,time_macros,include_file_mtime,include_file_ctime,file_stat_matche
+export CCACHE_SLOPPINESS=include_file_mtime
 exec "${CXX_LAUNCHER}" "${CMAKE_CXX_COMPILER}" "$@"
