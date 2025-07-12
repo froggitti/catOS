@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # usage: ./tools/build/tools/upx-if-packed.sh <path/to/upx> <path/to/file>
 
