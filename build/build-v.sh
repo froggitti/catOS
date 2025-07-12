@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CURRENT_BUILDER="vic-standalone-builder-7"
+CURRENT_BUILDER="vic-standalone-builder-8"
 
 set -e
 
