@@ -16,7 +16,7 @@ elif [[ "$(uname -a)" == *"aarch64"* && "$(uname -a)" == *"Linux"* ]]; then
     HOST="arm64_linux"
 else
     echo "Skipping upx download"
-    exit 1
+    exit 0
 fi
 
 echo "UPX platform: $HOST"

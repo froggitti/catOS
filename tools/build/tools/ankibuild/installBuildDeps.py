@@ -6,12 +6,12 @@ import argparse
 import platform
 import signal
 import re
-from distutils.version import LooseVersion, StrictVersion
+#from distutils.version import LooseVersion, StrictVersion
 from os import getenv, path, killpg, setsid, environ
 
 class DependencyInstaller(object):
 
-  L_BIN = path.join("/usr", "local", "bin")
+  L_BIN = path.join("/opt", "homebrew", "bin")
   APPROVED_BREW_VERSION = "1.5.9"
   MINIMUM_PYTHON3 = '3.6.4'
 
@@ -24,10 +24,7 @@ class DependencyInstaller(object):
     """Check whether a package @dep is installed"""
     # TODO: This check will work for executables, but checking whether something exists
     # is not enough. We need to ensure that the installed version has the required capabilities.
-    # OR we need to check that brew has just installed it.  Since some things are just libs.
-    # macOS comes bundled with a bad version of rsync
-    if dep == "rsync":
-      return False
+    # OR we need to check that brew has just installed it.  Since some things are just libs
     if not path.exists(path.join(self.L_BIN, dep)):
       notFound = subprocess.call(['which', dep], stdout=subprocess.PIPE)
       if notFound:
@@ -52,7 +49,7 @@ class DependencyInstaller(object):
   def mustUpgrade(self, tool, min_version):
     """Compare installed version to make sure its at least at the minimum value."""
 
-    home_regex = re.compile('.*(\d+\.\d+\.\d+\S*)\s')
+    home_regex = re.compile(r'.*(\d+\.\d+\.\d+\S*)\s')
 
     try:
       stdout_result = subprocess.check_output([tool, '--version'])
@@ -111,9 +108,9 @@ class DependencyInstaller(object):
       if result:
         print("error: failed to install %s!" % tool)
         return False
-      if not self.isInstalled(tool):
-        print(("warning: {0} still not found in {1}.  possibly keg-only".format(tool, self.L_BIN)))
-        return self.forceInstall(tool)
+      #if not self.isInstalled(tool):
+      #  print(("warning: {0} still not found in {1}.  possibly keg-only".format(tool, self.L_BIN)))
+      #  return self.forceInstall(tool)
     return True
 
   def installPythonPackage(self, package, version):
@@ -184,8 +181,8 @@ class DependencyInstaller(object):
       return False
 
     # dependency not existing wont break this.
-    self.minimumNeededVersion('python3', self.MINIMUM_PYTHON3)
-    self.minimumNeededVersion('brew', self.APPROVED_BREW_VERSION)
+    #self.minimumNeededVersion('python3', self.MINIMUM_PYTHON3)
+    #self.minimumNeededVersion('brew', self.APPROVED_BREW_VERSION)
 
     for tool in homebrew_deps:
       if not self.installTool(tool):

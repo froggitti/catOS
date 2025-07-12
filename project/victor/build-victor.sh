@@ -10,6 +10,10 @@ PROTOC_GEN_GO_GRPC_VERSION="v1.5.1"
 PROTOC_GEN_GRPC_GATEWAY_VERSION="v2.27.1"
 UPX_VERSION="5.0.1"
 
+if [[ "$(uname -a)" == *"Darwin"* ]]; then
+    export PATH="/opt/homebrew/bin:$PATH"
+fi
+
 SCRIPT_PATH=$(dirname $([ -L $0 ] && echo "$(dirname $0)/$(readlink -n $0)" || echo $0))
 SCRIPT_NAME=`basename ${0}`
 TOPLEVEL=$(cd "${SCRIPT_PATH}/../.." && pwd)
@@ -345,8 +349,13 @@ if [ -z "${GO_EXE+x}" ]; then
 fi
 
 if [ -z "${UPX_EXE+x}" ]; then
-    ${TOPLEVEL}/project/build-scripts/download-upx.sh ${UPX_VERSION}
-    UPX_EXE="${HOME}/.anki/upx/dist/${UPX_VERSION}/upx"
+    # no binary release for macOS, rely on brew
+    if [[ "$(uname -a)" == *"Darwin"* ]]; then
+        UPX_EXE="upx"
+    else
+        ${TOPLEVEL}/project/build-scripts/download-upx.sh ${UPX_VERSION}
+        UPX_EXE="${HOME}/.anki/upx/dist/${UPX_VERSION}/upx"
+    fi
 fi
 
 # Build/Install the protoc generators for go
@@ -355,8 +364,8 @@ mkdir -p "${GOBIN}"
 if [[ ! -x "$GOBIN/protoc-gen-go" ]] || [[ ! -x "$GOBIN/protoc-gen-grpc-gateway" ]]; then
     echo "Building/Installing protoc-gen-go and protoc-gen-grpc-gateway..."
     GOBIN=$GOBIN "${GO_EXE}" install google.golang.org/protobuf/cmd/protoc-gen-go@$PROTOC_GEN_GO_VERSION
-    GOBIN=$GOBIN "${GO_EXE}" install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1$PROTOC_GEN_GO_GRPC_VERSION
-    GOBIN=$GOBIN "${GO_EXE}" install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.27.1$PROTOC_GEN_GRPC_GATEWAY_VERSION
+    GOBIN=$GOBIN "${GO_EXE}" install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$PROTOC_GEN_GO_GRPC_VERSION
+    GOBIN=$GOBIN "${GO_EXE}" install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@$PROTOC_GEN_GRPC_GATEWAY_VERSION
 fi
 
 #
