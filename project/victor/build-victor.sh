@@ -5,6 +5,7 @@ set -e
 CMAKE_VERSION="3.30.4"
 VICOS_SDK_VERSION="5.2.1-r06"
 GO_VERSION="1.24.4"
+PROTOC_VERSION="31.1"
 PROTOC_GEN_GO_VERSION="v1.36.6"
 PROTOC_GEN_GO_GRPC_VERSION="v1.5.1"
 PROTOC_GEN_GRPC_GATEWAY_VERSION="v2.27.1"
@@ -358,6 +359,11 @@ if [ -z "${UPX_EXE+x}" ]; then
     fi
 fi
 
+if [ -z "${PROTOC_EXE+x}" ]; then
+    ${TOPLEVEL}/project/build-scripts/download-protoc.sh ${PROTOC_VERSION}
+    PROTOC_EXE="${HOME}/.anki/protoc/dist/${PROTOC_VERSION}/bin/protoc"
+fi
+
 # Build/Install the protoc generators for go
 GOBIN="${TOPLEVEL}/cloud/go/bin"
 mkdir -p "${GOBIN}"
@@ -440,6 +446,7 @@ if [ $CONFIGURE -eq 1 ]; then
         -G"${GENERATOR}" \
         -DANKI_GO_COMPILER=${GO_EXE} \
         -DANKI_UPX=${UPX_EXE} \
+        -DANKI_PROTOC=${PROTOC_EXE} \
         -DANKI_GO_BIN_PATH=${GOBIN} \
         -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} \
