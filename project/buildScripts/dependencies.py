@@ -402,7 +402,11 @@ def unpack_tarball(tar_file, file_types=[], put_in_subdir=False, add_metadata=Fa
   if file_types:
     tar_members = _get_specific_members(tar, file_types)
     #print("Unpacking %s (version %s) (%s files)" % (tar_file, tar_file_rev, len(tar_members)))
-    tar.extractall(dest_dir, members=tar_members)
+    if sys.version_info >= (3, 12):
+        # had to get rid of silly deprecation warning
+        tar.extractall(dest_dir, members=tar_members, filter="fully_trusted")
+    else:
+        tar.extractall(dest_dir, members=tar_members)
     tar.close()
     sprite_sequence = os.path.basename(os.path.dirname(tar_file)) in UNPACK_INTO_SUBDIR
     if ".json" in file_types and not sprite_sequence:
@@ -578,7 +582,7 @@ def svn_package(svn_dict):
 
         #Extract tar files if necessary
         if extract_types:
-            print("Extracting tar files from SVN assets...")
+            print("Encoding animations JSONs into FBS...")
             for sub_dir in sub_dirs:
                 #print(sub_dir)
                 put_in_sub_dir = os.path.basename(sub_dir) in UNPACK_INTO_SUBDIR

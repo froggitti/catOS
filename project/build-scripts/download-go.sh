@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 TOOLCHAIN_VERSION_DEFAULT="1.24.4"
 
@@ -22,14 +22,18 @@ else
     exit 1
 fi
 
+echo "Go platform: $HOST"
+
 GO_NAME="go${TOOLCHAIN_VERSION}.${HOST}"
 GO_VER="${TOOLCHAIN_VERSION}"
 
 if [[ ! -d "$HOME/.anki/go/dist/$GO_VER/go" ]]; then
     mkdir -p "$HOME/.anki/go/dist/$GO_VER"
     cd "$HOME/.anki/go/dist/$GO_VER"
+    echo "Downloading Go $GO_VER..."
     wget -q --show-progress "https://go.dev/dl/${GO_NAME}.tar.gz"
-    echo "Extracting Go..."
+    echo "Extracting Go $GO_VER..."
     tar -zxf "${GO_NAME}.tar.gz"
+    rm -f "${GO_NAME}.tar.gz"
 fi
 

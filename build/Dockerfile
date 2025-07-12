@@ -5,6 +5,9 @@ ARG GID
 ARG USER_NAME
 ARG DIR_PATH
 
+# this is too much, but it's probably nice to lean on the "more" than "less" side here
+# in the case i want to compile something which might need one of these,
+# so i don't have to switch out the container
 RUN apt-get update && \ 
     apt-get install -y sudo build-essential chrpath cpio debianutils \
     diffstat expect file gcc git iputils-ping libacl1 liblz4-tool \
@@ -26,14 +29,6 @@ ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 RUN usermod -u ${UID} ${USER_NAME} && groupmod -g ${GID} ${USER_NAME}
 
-RUN set -e; \
-    arch="$(dpkg --print-architecture)"; \
-	wget -q "https://github.com/upx/upx/releases/download/v5.0.0/upx-5.0.0-${arch}_linux.tar.xz"; \
-    tar -xvf upx-5.0.0-${arch}_linux.tar.xz && \
-    mv upx-5.0.0-${arch}_linux/upx /usr/bin/ && \
-    rm -f *.deb *.tar.gz *.tar.xz
-
-RUN chmod 0755 /usr/bin/upx
 RUN chmod 0755 /usr/local/bin
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 RUN ln -sf /usr/bin/ninja /usr/local/bin/ninja

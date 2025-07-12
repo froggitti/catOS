@@ -203,7 +203,7 @@ class DependencyInstaller(object):
 
 def parseArgs(scriptArgs):
   version = '1.0'
-  parser = argparse.ArgumentParser(description='runs homebrew to install required dependencies, and android package manager for android dependencies', version=version)
+  parser = argparse.ArgumentParser(description='runs homebrew to install required dependencies, and android package manager for android dependencies')
   parser.add_argument('--verbose', dest='verbose', action='store_true',
                       help='prints extra output')
   parser.add_argument('--dependencies', '-d', dest='deps', action='store', nargs='+',

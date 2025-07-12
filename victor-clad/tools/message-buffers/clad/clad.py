@@ -81,7 +81,7 @@ class CLADParser(PLYParser):
         )
         self._input_directories = input_directories
 
-    _include_directive_re = re.compile('^#include\s+\"(.*)\"(?:\s*/.*)*$')
+    _include_directive_re = re.compile(r'^#include\s+\"(.*)\"(?:\s*/.*)*$')
 
     def token_to_coord(self, token):
         return self.lineno_to_coord(token.lineno, self.lexer.find_tok_column(token.lexpos))
