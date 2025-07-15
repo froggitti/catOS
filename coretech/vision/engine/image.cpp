@@ -417,7 +417,7 @@ namespace Vision {
     switch(method)
     {
       case ResizeMethod::NearestNeighbor:
-        return cv::INTER_NN;
+        return cv::INTER_NEAREST;
 
       case ResizeMethod::Linear:
         return cv::INTER_LINEAR;
@@ -1696,7 +1696,7 @@ namespace Vision {
 
   ImageRGBA& ImageRGBA::SetFromGray(const Image& imageGray)
   {
-    cv::cvtColor(imageGray.get_CvMat_(), this->get_CvMat_(), cv::COLOR_GRAY2RGBACV);
+    cv::cvtColor(imageGray.get_CvMat_(), this->get_CvMat_(), cv::COLOR_GRAY2RGBA);
     SetTimestamp(imageGray.GetTimestamp());
     SetImageId(imageGray.GetImageId());
     return *this;
@@ -1795,7 +1795,7 @@ namespace Vision {
 
   ImageRGB& ImageRGB::SetFromGray(const Image& imageGray)
   {
-    cv::cvtColor(imageGray.get_CvMat_(), this->get_CvMat_(), CV_GRAY2RGB);
+    cv::cvtColor(imageGray.get_CvMat_(), this->get_CvMat_(), cv::COLOR_GRAY2RGB);
     SetTimestamp(imageGray.GetTimestamp());
     SetImageId(imageGray.GetImageId());
     return *this;
