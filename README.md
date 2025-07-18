@@ -157,7 +157,9 @@ If you do want to clean anyway:
 
 <details>
 <summary><strong>(Docker: x86_64 or arm64 Linux) or (macOS M-series)</strong></summary>
+
 - Run:
+
 ```
 ./build/clean.sh
 ```
@@ -165,7 +167,9 @@ If you do want to clean anyway:
 
 <details>
 <summary><strong>Bare Metal: x86_64 or arm64 Linux</strong></summary>
+
 - Run:
+
 ```
 vclean
 ```
