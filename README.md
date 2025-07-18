@@ -63,6 +63,7 @@ cd ~/wire-os-victor
 <br \>
 
 - Prerequisites:
+  - glibc 2.27 or above - this means anything Ubuntu 18.04 and newer will work.
   - The following packages need to be installed: `git wget curl openssl ninja g++ gcc pkg-config ccache`
 ```
 # Arch Linux:
@@ -88,7 +89,7 @@ source setenv.sh
 
 3. (OPTIONAL) Run this so you don't have to perform step 2 every time:
 ```
-echo "source \"$(pwd)/setenv.sh\"" >> $HOME/.profile
+echo "source \"$(pwd)/setenv.sh\"" >> $HOME/.bashrc
 ```
 
 4. Build:
