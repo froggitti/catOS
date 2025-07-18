@@ -135,7 +135,10 @@ cd ~/wire-os-victor
 
 <details>
 <summary><strong>(Docker: x86_64 or arm64 Linux) or (macOS M-series)</strong></summary>
+<br \>
+
 - Run:
+
 ```
 ./build/deploy-v.sh
 ```
@@ -143,7 +146,10 @@ cd ~/wire-os-victor
 
 <details>
 <summary><strong>Bare Metal: x86_64 or arm64 Linux</strong></summary>
+<br \>
+
 - Run:
+
 ```
 vdeploy
 ```
@@ -157,6 +163,7 @@ If you do want to clean anyway:
 
 <details>
 <summary><strong>(Docker: x86_64 or arm64 Linux) or (macOS M-series)</strong></summary>
+<br \>
 
 - Run:
 
@@ -167,6 +174,7 @@ If you do want to clean anyway:
 
 <details>
 <summary><strong>Bare Metal: x86_64 or arm64 Linux</strong></summary>
+<br \>
 
 - Run:
 
