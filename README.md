@@ -124,13 +124,14 @@ cd ~/wire-os-victor
 
 ## Deploying
 
-- First, get your robot's IP through CCIS:
+1. Install WireOS on your robot.
+2. Get your robot's IP through CCIS:
   - 1. Place your robot on the charger
   - 2. Double click the button
   - 3. Lift the lift up then down
   - 4. Write down the IP address somewhere
   - 5. Lift the lift up then down again to exit CCIS
-- Then:
+3. One of the following:
 
 <details>
 <summary><strong>(Docker: x86_64 or arm64 Linux) or (macOS M-series)</strong></summary>
