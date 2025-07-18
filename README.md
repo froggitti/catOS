@@ -28,7 +28,7 @@ Click an option below for instructions.
 
 <details>
 <summary><strong>Docker: x86_64 or arm64 Linux</strong></summary>
-
+<br />
 - Prerequisites: Make sure you have `docker` and `git` installed.
 
 1. Clone the repo and `cd` into it:
@@ -59,7 +59,7 @@ cd ~/wire-os-victor
 
 <details>
 <summary><strong>Bare Metal: x86_64 or arm64 Linux</strong></summary>
-
+<br />
 - Prerequisites:
   - The following packages need to be installed: `git wget curl openssl ninja g++ gcc pkg-config ccache`
 ```
@@ -99,7 +99,7 @@ vbuild
 <details>
 
 <summary><strong>macOS (M-series only)</strong></summary>
-
+<br />
 - Prereqs: Make sure you have [brew](https://brew.sh/) installed.
   -  Then: `brew install ccache wget upx ninja`
 
